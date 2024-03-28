@@ -4,7 +4,7 @@ MITM con password sniffer
 Questo codice è stato sviluppato per il solo scopo didattico e non vengono prese responsabilità per un eventuale uso inproprio.
 ## Funzionamento:
 Il funzionamento si basa sul [Man-In-The-Middle](https://it.wikipedia.org/wiki/Attacco_man_in_the_middle) che viene effettuato tramite un attacco di tipo [ARP spoofer](https://it.wikipedia.org/wiki/ARP_poisoning) grazie al quale è possibile identificarsi su una rete con l'indirizzo [MAC](https://it.wikipedia.org/wiki/Indirizzo_MAC) di un altra macchina.
-# Librerie
+## Librerie
 Per poter avviare il codice bisogna installare le seguenti librerie:
 * scapy
 * sys
