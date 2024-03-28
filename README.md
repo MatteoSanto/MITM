@@ -1,5 +1,5 @@
 # MITM
-MITM con password sniffer
+Man in the middle con password sniffer
 ## Premessa
 Questo codice è stato sviluppato per il solo scopo didattico. Si declina ogni responsabilità per un eventuale uso improprio.
 ## Funzionamento:
