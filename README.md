@@ -54,6 +54,12 @@ Esempio:
 ```bash
 python3 ARPspoofer.py 192.168.0.1 192.164.0.234
 ```
+
+Nel secondo basta eseguire il comando:
+```bash
+python3 sniffer.py
+```
+
 # Codice
 Di verranno seguito spiegati i codici dell'ARP spoofer e del Password sniffer.
 ## ARP spoofer
